@@ -1,6 +1,92 @@
 # YP01
 Штучки с змейкой
 
+# Класс Автор
+class Author:
+    def __init__(self, full_name: str, country: str):
+        self.full_name = full_name
+        self.country = country
+
+    def display_info(self):
+        """Выводит информацию об авторе."""
+        print(f"Автор: {self.full_name}, Страна: {self.country}")
+
+# Класс Книга
+class Book:
+    def __init__(self, title: str):
+        self.title = title
+        self._content = []  # Приватное поле содержание
+        print(f"Книга '{self.title}' создана")
+
+    def __del__(self):
+        print(f"Книга '{self.title}' удалена")
+
+    def add_work(self, work: str):
+        """Добавляет произведение в содержание книги."""
+        self._content.append(work)
+
+    def get_work_count(self):
+        """Возвращает количество произведений в книге."""
+        return len(self._content)
+
+    def display_info(self):
+        """Выводит информацию о книге."""
+        print(f"Книга: {self.title}")
+        print("Содержание:")
+        for idx, work in enumerate(self._content, start=1):
+            print(f"{idx}) {work}")
+
+# Класс КнигаАвтора, наследующий от Автор и Книга
+class BookAuthor(Author, Book):
+    def __init__(self, full_name: str, country: str, title: str):
+        Author.__init__(self, full_name, country)
+        Book.__init__(self, title)
+
+    def display_full_info(self):
+        """Выводит полную информацию о авторе и книге."""
+        self.display_info()  # Информация об авторе
+        Book.display_info(self)  # Информация о книге
+
+# Основная программа
+def main():
+    authors = []
+    n = int(input("Введите количество авторов: "))
+
+    # Ввод данных от пользователя
+    for _ in range(n):
+        full_name = input("Введите ФИО автора: ")
+        country = input("Введите страну автора: ")
+        title = input("Введите название книги: ")
+        
+        # Создание экземпляра BookAuthor
+        book_author = BookAuthor(full_name, country, title)
+        
+        # Ввод произведений книги
+        while True:
+            work = input("Введите название произведения (или 'exit' для выхода): ")
+            if work.lower() == 'exit':
+                break
+            book_author.add_work(work)
+        
+        authors.append(book_author)
+    
+    # Вывод всех авторов
+    print("\nСписок всех авторов:")
+    for author in authors:
+        author.display_info()
+
+    # Вывод только русских авторов
+    print("\nСписок русских авторов:")
+    for author in authors:
+        if author.country.lower() == "россия":
+            author.display_info()
+
+if __name__ == "__main__":
+    main()
+
+
+В этой реализации класса BookAuthor добавлена возможность создания книги с произведениями. В основной программе пользователь может вводить произведения книги, а затем выводится информация обо всех авторах и только о русских авторах.
+
 # Функция возведения числа a в степень x
 def power(a: 'основание степени' = 2, x: 'показатель степени' = 1):
     """Возводит число a в степень x, по умолчанию a=2, x=1."""
