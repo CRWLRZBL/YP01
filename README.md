@@ -1,75 +1,204 @@
 # YP01
 Штучки с змейкой
 
-import random
+# Функция возведения числа a в степень x
+def power(a: 'основание степени' = 2, x: 'показатель степени' = 1):
+    """Возводит число a в степень x, по умолчанию a=2, x=1."""
+    return a ** x
 
-# Генерация случайного числа и проверка на простоту
-random_number = random.randint(1, 1000)
-is_prime = True
+# Тестирование функции power
+print(power())  # Ожидается 2
+print(power(3))  # Ожидается 3
+print(power(3, 2))  # Ожидается 9
+print(power(4, 0))  # Ожидается 1
 
-if random_number < 2:
-    is_prime = False
-else:
-    for i in range(2, int(random_number ** 0.5) + 1):
-        if random_number % i == 0:
-            is_prime = False
-            break
 
-print("Случайное число:", random_number)
-print("Является ли число простым:", "Да" if is_prime else "Нет")
+# Функция вычисления факториала
+def factorial(n: 'целое неотрицательное число'):
+    """Вычисляет факториал числа n рекурсивно. Возвращает -1 при некорректных данных."""
+    if not isinstance(n, int) or n < 0:
+        return -1
+    if n == 0 or n == 1:
+        return 1
+    return n * factorial(n - 1)
 
-# Угадывание числа от 1 до 10
-secret_number = random.randint(1, 10)
-while True:
-    guess = int(input("Угадайте число от 1 до 10: "))
-    if guess == secret_number:
-        print("Молодец! Вы угадали.")
-        break
-    elif guess < secret_number:
-        print("Ваше число меньше загаданного.")
-    else:
-        print("Ваше число больше загаданного.")
+# Тестирование функции factorial
+print(factorial(5))  # Ожидается 120
+print(factorial(-1))  # Ожидается -1
+print(factorial("строка"))  # Ожидается -1
 
-# Перевод температуры Цельсия в Фаренгейт
-print("Температура (°C) и её перевод в Фаренгейт (°F):")
-for celsius in range(100, -1, -10):
-    fahrenheit = celsius * 1.8 + 32
-    print("{:.1f} °C = {:.1f} °F".format(celsius, fahrenheit))
 
-# Запрос суммы покупки и внесенной суммы
-while True:
-    purchase_amount = float(input("Введите сумму покупки: "))
-    if purchase_amount <= 0:
-        print("Сумма покупки должна быть больше 0. Попробуйте снова.")
-        continue
-    break
+# Функция для вычисления статистики
+def statistics(*args: 'числа'):
+    """Выводит сумму, среднее, максимум, минимум и количество чисел."""
+    if len(args) == 0:
+        return 'Нет данных для анализа.'
+    
+    total = sum(args)
+    average = total / len(args)
+    maximum = max(args)
+    minimum = min(args)
+    count = len(args)
+    
+    print(f"Сумма: {total}, Среднее: {average}, Максимум: {maximum}, Минимум: {minimum}, Количество: {count}")
 
-while True:
-    paid_amount = float(input("Введите внесенную сумму: "))
-    if paid_amount < purchase_amount:
-        print("Недостающая сумма:", purchase_amount - paid_amount)
-        continue
-    break
+# Тестирование функции statistics
+statistics(1, 2, 3, 4, 5)  # Ожидается 15, 3.0, 5, 1, 5
+statistics()  # Ожидается 'Нет данных для анализа.'
 
-if paid_amount == purchase_amount:
-    print("Спасибо!")
-else:
-    change = paid_amount - purchase_amount
-    print("Возьмите сдачу:", change)
 
-# Вывод значений функции y(x) = ax + b
-N = int(input("Введите количество значений N: "))
-a = float(input("Введите a: "))
-b = float(input("Введите b: "))
-x1 = float(input("Введите x1: "))
-x2 = float(input("Введите x2: "))
+# Функция для изменения значений списка
+def multiply_list(lst: 'список чисел', multiplier: 'множитель' = -1):
+    """Изменяет значения списка путем умножения каждого элемента на multiplier."""
+    for i in range(len(lst)):
+        lst[i] *= multiplier
+    return lst
 
-step = (x2 - x1) / (N - 1) if x1 < x2 else (x1 - x2) / (N - 1)
+# Тестирование функции multiply_list
+my_list = [1, 2, 3]
+print(multiply_list(my_list))  # Ожидается [-1, -2, -3]
+print(multiply_list(my_list, 2))  # Ожидается [-2, -4, -6]
 
-x_values = [x1 + i * step for i in range(N)]
-if x1 > x2:
-    x_values.reverse()
 
-for x in x_values:
-    y = a * x + b
-    print("y({:.2f}) = {} * {:.2f} + {} = {:.3f}".format(x, a, x, b, y))
+# Лямбда-функция для вычисления значения y
+linear_function = lambda a, x, b: a * x + b
+
+# Тестирование лямбда-функции
+print(linear_function(2, 3, 1))  # Ожидается 7
+print(linear_function(1, 5, 0))  # Ожидается 5
+
+#PR2
+
+# Модуль с необходимыми функциями
+
+# Функция приветствия
+def hello(name: 'имя пользователя' = None):
+    """Выводит приветствие. Если передано имя, выводит 'Hello, имя'."""
+    if name:
+        return f"Hello, {name}"
+    return "Hello, World"
+
+# Функция арифметики
+def arithmetic(a: 'число', b: 'число', operation: 'операция'):
+    """Выполняет арифметическую операцию над двумя числами."""
+    if operation == "+":
+        return a + b
+    elif operation == "-":
+        return a - b
+    elif operation == "*":
+        return a * b
+    elif operation == "/":
+        return a / b if b != 0 else 'Ошибка: деление на ноль'
+    return "Неизвестная операция"
+
+# Функция для вычисления свойств квадрата
+def square(side: 'длина стороны квадрата'):
+    """Возвращает периметр, площадь и диагональ квадрата."""
+    perimeter = 4 * side
+    area = side ** 2
+    diagonal = (side ** 2 + side ** 2) ** 0.5
+    return perimeter, area, diagonal
+
+# Функция для определения времени года
+def season(month: 'номер месяца от 1 до 12'):
+    """Возвращает время года для данного месяца."""
+    if month in [12, 1, 2]:
+        return "Зима"
+    elif month in [3, 4, 5]:
+        return "Весна"
+    elif month in [6, 7, 8]:
+        return "Лето"
+    elif month in [9, 10, 11]:
+        return "Осень"
+    return "Неверный месяц"
+
+# Функция для вычисления суммы вклада
+def bank(a: 'сумма вклада', years: 'количество лет'):
+    """Возвращает сумму на счету через years лет с 10% годовых."""
+    total = a * ((1 + 0.1) ** years)
+    return total
+
+# Примеры использования функций
+if __name__ == "__main__":
+    print(hello("Alice"))  # Ожидается "Hello, Alice"
+    print(arithmetic(10, 5, "+"))  # Ожидается 15
+    print(square(4))  # Ожидается (16, 16, 5.656854249492381)
+    print(season(4))  # Ожидается "Весна"
+    print(bank(1000, 5))  # Ожидается 1610.51
+
+
+#PR3
+
+# Класс Автор
+class Author:
+    def __init__(self, full_name: str, country: str):
+        self.full_name = full_name
+        self.country = country
+
+    def display_info(self):
+        """Выводит информацию об авторе."""
+        print(f"Автор: {self.full_name}, Страна: {self.country}")
+
+# Класс Книга
+class Book:
+    def __init__(self, title: str):
+        self.title = title
+        self._content = []  # Приватное поле содержание
+        print(f"Книга '{self.title}' создана")
+
+    def __del__(self):
+        print(f"Книга '{self.title}' удалена")
+
+    def add_work(self, work: str):
+        """Добавляет произведение в содержание книги."""
+        self._content.append(work)
+
+    def get_work_count(self):
+        """Возвращает количество произведений в книге."""
+        return len(self._content)
+
+    def display_info(self):
+        """Выводит информацию о книге."""
+        print(f"Книга: {self.title}")
+        print("Содержание:")
+        for idx, work in enumerate(self._content, start=1):
+            print(f"{idx}) {work}")
+
+# Класс КнигаАвтора, наследующий от Автор и Книга
+class BookAuthor(Author, Book):
+    def __init__(self, full_name: str, country: str, title: str):
+        Author.__init__(self, full_name, country)
+        Book.__init__(self, title)
+
+    def display_full_info(self):
+        """Выводит полную информацию о авторе и книге."""
+        self.display_info()  # Информация об авторе
+        self.display_info()  # Информация о книге
+
+# Основная программа
+def main():
+    authors = []
+    n = int(input("Введите количество авторов: "))
+
+    # Ввод данных от пользователя
+    for _ in range(n):
+        full_name = input("Введите ФИО автора: ")
+        country = input("Введите страну автора: ")
+        authors.append(Author(full_name, country))
+    
+    # Вывод всех авторов
+    print("\nСписок всех авторов:")
+    for author in authors:
+        author.display_info()
+
+    # Вывод только русских авторов
+    print("\nСписок русских авторов:")
+    for author in authors:
+        if author.country.lower() == "россия":
+            author.display_info()
+
+if __name__ == "__main__":
+    main()
+
+
+Этот код включает в себя реализацию классов Author, Book и BookAuthor. Основная программа позволяет пользователю вводить информацию об авторах и выводить информацию о них и о русских авторах. Класс Book реализует дополнительные методы для работы с содержимым книги.
