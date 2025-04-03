@@ -1,6 +1,118 @@
 # YP01
 Штучки с змейкой
 
+Вот решения для каждой из заданных вами задач с использованием Python.
+
+### 5.1 Вывод содержимого файла и выполнение .py скрипта
+
+import os
+
+filename = input("Введите имя файла: ")
+
+try:
+    with open(filename, 'r') as file:
+        content = file.read()
+        print(content)
+
+    # Проверяем, заканчивается ли имя файла на .py
+    if os.path.splitext(filename)[1] == '.py':
+        exec(content)
+except FileNotFoundError:
+    print("Файл не найден!")
+except Exception as e:
+    print(f"Произошла ошибка: {e}")
+
+
+### 5.2 Запись текста в файл
+
+filename = input("Введите имя файла: ")
+mode = 'a'  # Режим добавления
+
+# Проверяем, существует ли файл
+if os.path.exists(filename):
+    action = input("Файл существует. Хотите дописать (d) или перезаписать (p)? ")
+    if action.lower() == 'p':
+        mode = 'w'  # Режим перезаписи
+
+with open(filename, mode) as file:
+    while True:
+        line = input("Введите строку (для завершения введите 'end'): ")
+        if line == 'end':
+            break
+        file.write(line + '\n')
+
+
+### 5.3 Операции с файлом
+
+import os
+
+filename = input("Введите имя файла: ")
+
+if not os.path.exists(filename):
+    print("Файл не найден!")
+else:
+    while True:
+        action = input("Выберите операцию: (1) Вывод содержимого, (2) Удаление, (3) Переименование, (q) Выход: ")
+
+        if action == '1':
+            with open(filename, 'r') as file:
+                print(file.read())
+        elif action == '2':
+            os.remove(filename)
+            print("Файл удален.")
+            break
+        elif action == '3':
+            new_name = input("Введите новое имя файла: ")
+            os.rename(filename, new_name)
+            print(f"Файл переименован в {new_name}.")
+            filename = new_name  # Обновляем имя файла
+        elif action == 'q':
+            break
+        else:
+            print("Некорректный выбор.")
+
+
+### 5.4 Удаление всех .txt файлов в директории и поддиректориях
+
+import os
+
+directory = input("Введите путь к директории: ")
+
+for dirpath, dirnames, filenames in os.walk(directory):
+    for filename in filenames:
+        if filename.endswith('.txt'):
+            file_path = os.path.join(dirpath, filename)
+            os.remove(file_path)
+            print(f"Удален файл: {file_path}")
+
+
+### 5.5 Запись списка поддиректорий и файлов с их размерами
+
+import os
+
+directory = input("Введите путь к директории: ")
+output_file = 'file_sizes.txt'
+
+with open(output_file, 'w') as file:
+    for dirpath, dirnames, filenames in os.walk(directory):
+        for name in dirnames + filenames:
+            path = os.path.join(dirpath, name)
+            size_kb = os.path.getsize(path) / 1024  # Получаем размер в КБ
+            file.write(f"{name}: {size_kb:.2f} KB\n")
+
+print(f"Размеры файлов и папок записаны в {output_file}.")
+
+
+### Описание решений
+
+1. Вывод и выполнение файла: Программа запрашивает имя файла, выводит его содержимое и выполняет код, если это Python-файл.
+2. Запись текста в файл: Пользователь вводит строки для записи, программа обрабатывает наличие файла.
+3. Операции с файлом: Пользователь может вывести содержимое, удалить или переименовать файл.
+4. Удаление .txt файлов: Программа рекурсивно удаляет все файлы с расширением .txt.
+5. Запись файлов и папок: Программа записывает список поддиректорий и файлов с их размерами в отдельный файл.
+
+Эти программы помогут вам выполнять операции с файлами в Python.
+
 # Класс Автор
 class Author:
     def __init__(self, full_name: str, country: str):
