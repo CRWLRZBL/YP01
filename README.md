@@ -1,3 +1,132 @@
+Вот полный код для всех задач, объединенный в один файл:
+
+import os
+
+# Задача 5.1 Вывод содержимого файла и выполнение .py скрипта
+def task_5_1():
+    filename = input("Введите имя файла: ")
+
+    try:
+        with open(filename, 'r') as file:
+            content = file.read()
+            print(content)
+
+        if os.path.splitext(filename)[1] == '.py':
+            exec(content)
+    except FileNotFoundError:
+        print("Файл не найден!")
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
+# Задача 5.2 Запись текста в файл
+def task_5_2():
+    filename = input("Введите имя файла: ")
+    mode = 'a'
+
+    if os.path.exists(filename):
+        action = input("Файл существует. Хотите дописать (d) или перезаписать (p)? ")
+        if action.lower() == 'p':
+            mode = 'w'
+
+    with open(filename, mode) as file:
+        while True:
+            line = input("Введите строку (для завершения введите 'end'): ")
+            if line == 'end':
+                break
+            file.write(line + '\n')
+
+# Задача 5.3 Операции с файлом
+def task_5_3():
+    filename = input("Введите имя файла: ")
+
+    if not os.path.exists(filename):
+        print("Файл не найден!")
+    else:
+        while True:
+            action = input("Выберите операцию: (1) Вывод содержимого, (2) Удаление, (3) Переименование, (q) Выход: ")
+
+            if action == '1':
+                with open(filename, 'r') as file:
+                    print(file.read())
+            elif action == '2':
+                os.remove(filename)
+                print("Файл удален.")
+                break
+            elif action == '3':
+                new_name = input("Введите новое имя файла: ")
+                os.rename(filename, new_name)
+                print(f"Файл переименован в {new_name}.")
+                filename = new_name
+            elif action == 'q':
+                break
+            else:
+                print("Некорректный выбор.")
+
+# Задача 5.4 Удаление всех .txt файлов в директории и поддиректориях
+def task_5_4():
+    directory = input("Введите путь к директории: ")
+
+    for dirpath, dirnames, filenames in os.walk(directory):
+        for filename in filenames:
+            if filename.endswith('.txt'):
+                file_path = os.path.join(dirpath, filename)
+                os.remove(file_path)
+                print(f"Удален файл: {file_path}")
+
+# Задача 5.5 Запись списка поддиректорий и файлов с их размерами
+def task_5_5():
+    directory = input("Введите путь к директории: ")
+    output_file = 'file_sizes.txt'
+
+    with open(output_file, 'w') as file:
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for name in dirnames + filenames:
+                path = os.path.join(dirpath, name)
+                size_kb = os.path.getsize(path) / 1024
+                file.write(f"{name}: {size_kb:.2f} KB\n")
+
+    print(f"Размеры файлов и папок записаны в {output_file}.")
+
+# Выбор задачи для выполнения
+def main():
+    while True:
+        print("\nВыберите задачу для выполнения:")
+        print("1. Вывод содержимого файла и выполнение .py скрипта")
+        print("2. Запись текста в файл")
+        print("3. Операции с файлом")
+        print("4. Удаление всех .txt файлов")
+        print("5. Запись списка поддиректорий и файлов с их размерами")
+        print("6. Выход")
+        
+        choice = input("Введите номер задачи: ")
+        
+        if choice == '1':
+            task_5_1()
+        elif choice == '2':
+            task_5_2()
+        elif choice == '3':
+            task_5_3()
+        elif choice == '4':
+            task_5_4()
+        elif choice == '5':
+            task_5_5()
+        elif choice == '6':
+            break
+        else:
+            print("Некорректный выбор. Попробуйте еще раз.")
+
+if __name__ == "__main__":
+    main()
+
+
+### Описание кода
+- Весь код организован в функции, каждая из которых решает соответствующую задачу.
+- В main() предлагается меню для выбора выполняемой задачи.
+- Код включает обработку ошибок и проверки существования файлов для безопасной работы.
+
+
+
+
 # YP01
 Штучки с змейкой
 
