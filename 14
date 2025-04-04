@@ -1,4 +1,4 @@
-Вот объединенный файл с примерами оконных приложений на Python с использованием Tkinter для выполнения всех ваших задач:
+Вот дополненный код с реализацией приложения с меню и финальной интеграцией всех форм:
 
 import tkinter as tk
 
@@ -73,6 +73,7 @@ def open_associated_vars_app():
     associated_app = tk.Tk()
     associated_app.title("Ассоциированные переменные")
 
+    global username_var, password_var, remember_var, gender_var, label_text
     username_var = tk.StringVar()
     password_var = tk.StringVar()
     remember_var = tk.BooleanVar()
@@ -118,3 +119,25 @@ def open_menu_app():
     app.config(menu=menu)
 
     color_menu = tk.Menu(menu)
+
+    menu.add_cascade(label="Цвет", menu=color_menu)
+    color_menu.add_command(label="Красный", command=lambda: change_color("red"))
+    color_menu.add_command(label="Зеленый", command=lambda: change_color("green"))
+    color_menu.add_command(label="Синий", command=lambda: change_color("blue"))
+
+    size_menu = tk.Menu(menu)
+    menu.add_cascade(label="Размер", menu=size_menu)
+    size_menu.add_command(label="500x500", command=lambda: change_size("500x500"))
+    size_menu.add_command(label="700x400", command=lambda: change_size("700x400"))
+
+    app.mainloop()
+
+# Запуск всех приложений
+if __name__ == "__main__":
+    open_menu_app()
+    open_login_form()
+    open_register_form()
+    open_associated_vars_app()
+
+
+В этом коде реализовано приложение с меню, которое позволяет изменять цвет окна и его размер. Также добавлены функции для открытия форм авторизации и регистрации. Каждый раздел будет работать независимо, и окна будут открываться последовательно. Вы можете изменять и расширять функциональность по своему усмотрению!
