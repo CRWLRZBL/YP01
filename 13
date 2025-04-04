@@ -1,0 +1,99 @@
+Вот объединенный файл с примерами приложений на Python для каждой из заданных задач:
+
+import xml.etree.ElementTree as ET
+import wave
+import sqlite3
+import tkinter as tk
+from tkinter import filedialog
+
+# Работа с XML-файлом
+def read_xml(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    for child in root:
+        print(child.tag, child.attrib)
+
+def modify_xml(file_path, new_data):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    
+    for elem in root.iter('element_name'):
+        elem.text = new_data
+        
+    tree.write(file_path)
+
+# Работа с WAV-файлом
+def create_wav(file_path, num_channels, sample_width, framerate, num_frames):
+    with wave.open(file_path, 'w') as wav_file:
+        wav_file.setnchannels(num_channels)
+        wav_file.setsampwidth(sample_width)
+        wav_file.setframerate(framerate)
+        wav_file.setnframes(num_frames)
+        wav_file.writeframes(b'\x00' * num_frames * num_channels * sample_width)
+
+def modify_wav(file_path):
+    with wave.open(file_path, 'r') as wav_file:
+        params = wav_file.getparams()
+        frames = wav_file.readframes(params.nframes)
+
+    modified_frames = frames + b'\x00' * 1024
+
+    with wave.open(file_path, 'w') as wav_file:
+        wav_file.setparams(params)
+        wav_file.writeframes(modified_frames)
+
+# Работа с SQLite
+def create_db(db_name):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, age INTEGER)''')
+    conn.commit()
+    conn.close()
+
+def modify_db(db_name, user_id, new_name, new_age):
+    conn = sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    cursor.execute('''UPDATE users SET name=?, age=? WHERE id=?''', (new_name, new_age, user_id))
+    conn.commit()
+    conn.close()
+
+# Оконное приложение
+def save_text():
+    file_path = filedialog.asksaveasfilename(defaultextension=".txt", 
+                                               filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    if file_path:
+        with open(file_path, 'w') as file:
+            file.write(text_area.get("1.0", tk.END))
+
+def on_key_press(event):
+    if event.keysym == 'Escape':
+        app.destroy()
+
+app = tk.Tk()
+app.title("Многофункциональное приложение")
+app.geometry("400x400")
+
+# XML, WAV и SQLite примеры
+read_xml('file.xml')  # Подставьте свой путь
+modify_xml('file.xml', 'new_value')  # Подставьте свой путь
+
+create_wav('output.wav', 1, 2, 44100, 10000)
+modify_wav('output.wav')
+
+create_db('users.db')
+modify_db('users.db', 1, 'New Name', 25)
+
+# Виджеты для текстового ввода
+text_area = tk.Text(app)
+text_area.pack(expand=True, fill=tk.BOTH)
+
+save_button = tk.Button(app, text="Сохранить", command=save_text)
+save_button.pack()
+
+app.bind('<Control-s>', lambda event: save_text())
+app.bind('<Escape>', on_key_press)
+
+app.mainloop()
+
+
+Этот файл включает в себя все запрашиваемые вами функции. Запустив этот код, вы сможете взаимодействовать с XML-файлами, WAV-файлами и SQLite базами данных, а также использовать графический интерфейс с многострочным полем ввода. Убедитесь, что у вас есть актуальные пути к файлам, которые вы хотите использовать, и соответствующие файлы в директории.
