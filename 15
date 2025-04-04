@@ -1,0 +1,87 @@
+Вот объединенный файл с примерами оконных приложений на Python с использованием Tkinter для выполнения всех ваших задач:
+
+import tkinter as tk
+from tkinter import filedialog
+
+# Приложение с многострочным полем ввода и кнопкой Сохранить
+def save_text():
+    file_path = filedialog.asksaveasfilename(defaultextension=".txt", 
+                                               filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    if file_path:
+        with open(file_path, 'w') as file:
+            file.write(text_area.get("1.0", tk.END))
+
+def on_key_press(event):
+    if event.keysym == 'Escape':
+        text_input_app.destroy()
+
+text_input_app = tk.Tk()
+text_input_app.title("Многострочное поле ввода")
+text_input_app.geometry("400x300")
+
+text_area = tk.Text(text_input_app)
+text_area.pack(expand=True, fill=tk.BOTH)
+
+save_button = tk.Button(text_input_app, text="Сохранить", command=save_text)
+save_button.pack()
+
+text_input_app.bind('<Control-s>', lambda event: save_text())
+text_input_app.bind('<Escape>', on_key_press)
+
+# Приложение с тремя полями ввода
+def on_click(event):
+    if event.num == 1:  # левая кнопка мыши
+        label.config(text=f"Активация: {event.widget.cget('text')}")
+    elif event.num == 3:  # правая кнопка мыши
+        print(f"Правый клик на: {event.widget.cget('text')}")
+
+entry_app = tk.Tk()
+entry_app.title("Три поля ввода")
+
+label = tk.Label(entry_app, text="")
+label.pack(pady=10)
+
+entry1 = tk.Entry(entry_app, name="Поле 1")
+entry1.pack(pady=2)
+entry2 = tk.Entry(entry_app, name="Поле 2")
+entry2.pack(pady=2)
+entry3 = tk.Entry(entry_app, name="Поле 3")
+entry3.pack(pady=2)
+
+# Подписка на события
+entry_app.bind_class("Entry", "<Button-1>", on_click)
+entry_app.bind_class("Entry", "<Button-3>", on_click)
+
+# Приложение с координатами мыши
+def update_coordinates(event):
+    label.config(text=f"Координаты мыши: x={event.x}, y={event.y}")
+
+coordinates_app = tk.Tk()
+coordinates_app.title("Координаты мыши")
+
+label = tk.Label(coordinates_app, text="Координаты мыши")
+label.pack(pady=20)
+
+coordinates_app.bind("<Motion>", update_coordinates)
+
+# Приложение с нажатыми клавишами
+def key_pressed(event):
+    current_text = label.cget("text")
+    label.config(text=current_text + event.char)
+
+keys_app = tk.Tk()
+keys_app.title("Нажатые клавиши")
+
+label = tk.Label(keys_app, text="Нажатые клавиши: ")
+label.pack(pady=20)
+
+keys_app.bind("<Key>", key_pressed)
+
+# Запуск приложений
+text_input_app.mainloop()
+entry_app.mainloop()
+coordinates_app.mainloop()
+keys_app.mainloop()
+
+
+Этот файл объединяет все предложенные приложения. Каждое приложение работает независимо, и вы можете запускать их последовательно. Обратите внимание, что окна будут открыты по порядку, и вам нужно будет закрывать каждое приложение, прежде чем открывать следующее. Вы можете модифицировать и расширять их согласно вашим потребностям.
