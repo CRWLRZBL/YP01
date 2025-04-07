@@ -1,0 +1,114 @@
+#1. Класс User
+public class User
+{
+    public string Login { get; set; }
+    public string Password { get; set; }
+}
+
+#2. UserListViewModel
+public class UserListViewModel : ViewModelBase
+{
+    public ObservableCollection<User> Users { get; } = new();
+    
+    public ReactiveCommand<User, Unit> DeleteCommand { get; }
+    public ReactiveCommand<Unit, Unit> AddCommand { get; }
+
+    private string _newLogin;
+    public string NewLogin
+    {
+        get => _newLogin;
+        set => this.RaiseAndSetIfChanged(ref _newLogin, value);
+    }
+
+    private string _newPassword;
+    public string NewPassword
+    {
+        get => _newPassword;
+        set => this.RaiseAndSetIfChanged(ref _newPassword, value);
+    }
+
+    public UserListViewModel()
+    {
+        // Тестовые данные
+        Users.Add(new User { Login = "user1", Password = "pass1" });
+        Users.Add(new User { Login = "user2", Password = "pass2" });
+
+        DeleteCommand = ReactiveCommand.Create<User>(user => Users.Remove(user));
+        AddCommand = ReactiveCommand.Create(() => 
+        {
+            Users.Add(new User { Login = NewLogin, Password = NewPassword });
+            NewLogin = NewPassword = string.Empty;
+        });
+    }
+}
+
+#3. UserListView.axaml
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:YourNamespace.ViewModels"
+             x:Class="YourNamespace.UserListView">
+    
+    <StackPanel Margin="10" Spacing="10">
+        <!-- Форма добавления -->
+        <TextBox Watermark="Логин" Text="{Binding NewLogin}"/>
+        <TextBox Watermark="Пароль" Text="{Binding NewPassword}"/>
+        <Button Content="Добавить" Command="{Binding AddCommand}"/>
+        
+        <!-- ListView -->
+        <ListView Items="{Binding Users}">
+            <ListView.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="{Binding Login}" Width="100"/>
+                        <TextBlock Text="{Binding Password}" Width="100"/>
+                        <Button Content="Удалить" 
+                                Command="{Binding $parent[UserControl].DataContext.DeleteCommand}"
+                                CommandParameter="{Binding}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- DataGrid -->
+        <DataGrid Items="{Binding Users}"
+                  AutoGenerateColumns="False"
+                  CanUserReorderColumns="True"
+                  CanUserResizeColumns="True"
+                  CanUserSortColumns="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Логин" Binding="{Binding Login}"/>
+                <DataGridTextColumn Header="Пароль" Binding="{Binding Password}"/>
+                <DataGridTemplateColumn Header="Действие">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Удалить"
+                                    Command="{Binding DataContext.DeleteCommand, 
+                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </StackPanel>
+</UserControl>
+
+#4. Настройка DataGrid (App.axaml)
+<Application.Styles>
+    <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+</Application.Styles>
+
+5. Установка пакета
+dotnet add package Avalonia.Controls.DataGrid
+Пояснения:
+Для работы с командами используется ReactiveUI
+ObservableCollection автоматически обновляет UI при изменениях
+Связывание через $parent и RelativeSource обеспечивает доступ к контексту ViewModel
+DataGrid требует отдельного стиля из пакета
+Свойства CanUser* включают базовые взаимодействия с колонками
+Тестирование:
+Добавление новых пользователей через текстовые поля
+Удаление через кнопки в ListView и DataGrid
+Перетаскивание и изменение размера колонок
+Сортировка по колонкам
+Редактирование данных напрямую в DataGrid (по умолчанию включено)
