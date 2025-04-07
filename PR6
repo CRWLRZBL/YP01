@@ -1,0 +1,146 @@
+#Общий стиль для кнопок
+Styles.axaml // UserControl.Resources
+
+<Style Selector="Button">
+    <Setter Property="Background" Value="LightBlue"/>
+    <Setter Property="FontFamily" Value="Arial"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="Foreground" Value="Black"/>
+    <Setter Property="Padding" Value="10 5"/>
+</Style>
+
+#1.3 Стиль для TextBox "Title"
+
+<Style Selector="TextBox#Title">
+    <Setter Property="Background" Value="LightYellow"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="FontSize" Value="16"/>
+</Style>
+
+Использование:
+<TextBox Name="Title" Text="Заголовок"/>
+
+#1.4 Стиль для кнопок внутри StackPanel
+
+<Style Selector="StackPanel Button">
+    <Setter Property="Background" Value="LightGreen"/>
+    <Setter Property="FontStyle" Value="Italic"/>
+</Style>
+
+#1.5 Стиль для TextBlock внутри Border с классом highlight
+
+<Style Selector="Border.highlight TextBlock">
+    <Setter Property="FontStyle" Value="Italic"/>
+    <Setter Property="Foreground" Value="DarkBlue"/>
+</Style>
+
+Использование:
+
+<Border Classes="highlight">
+    <TextBlock Text="Выделенный текст"/>
+</Border>
+
+#2.1 Стиль кнопки при наведении
+
+<Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#FF0078D7"/>
+</Style>
+
+#2.2 Стиль TextBox при фокусе
+
+<Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="Red"/>
+</Style>
+
+#2.3 Стиль выбранного ListBoxItem
+
+<Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="LightBlue"/>
+</Style>
+
+#2.4 Стиль для четных элементов ListBoxItem
+
+<Style Selector="ListBoxItem:nth-child(even) /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#F0F0F0"/>
+</Style>
+
+#3.1 Два стиля для TextBlock
+
+<Style Selector="TextBlock.income">
+    <Setter Property="Foreground" Value="Green"/>
+</Style>
+<Style Selector="TextBlock.expense">
+    <Setter Property="Foreground" Value="Red"/>
+</Style>
+
+#3.2 Класс MoneyOperation
+
+public class MoneyOperation
+{
+    public string Description { get; set; }
+    public decimal Amount { get; set; }
+    public bool IsIncome { get; set; }
+}
+#3.3 Отображение списка с привязкой стилей
+
+<ListBox Items="{Binding Operations}">
+    <ListBox.ItemTemplate>
+        <DataTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="{Binding Description}" Width="200"/>
+                <TextBlock 
+                    Text="{Binding Amount}" 
+                    Classes.income="{Binding IsIncome}"
+                    Classes.expense="{Binding !IsIncome}"/>
+            </StackPanel>
+        </DataTemplate>
+    </ListBox.ItemTemplate>
+</ListBox>
+
+#4.1 Стиль для наследников Button
+
+<Style Selector=":is(Button)">
+    <Setter Property="Background" Value="LightGray"/>
+</Style>
+
+
+#5.1 Стиль для TextBlock с FontSize=16
+
+<Style Selector="TextBlock[FontSize=16]">
+    <Setter Property="Foreground" Value="Purple"/>
+</Style>
+
+#6.2-6.3 Настройка темы в App.axaml
+
+<Application.Styles>
+    <themes:MaterialTheme BaseTheme="Light" PrimaryColor="Purple" SecondaryColor="Lime"/>
+</Application.Styles>
+
+#6.4 Пример элементов управления в MainView
+
+<StackPanel>
+    <TextBlock Text="Material Design Example"/>
+    <TextBox Watermark="Введите текст"/>
+    <Button Content="Кнопка"/>
+    <CheckBox Content="Чекбокс"/>
+    <RadioButton Content="Вариант 1" GroupName="Options"/>
+    <RadioButton Content="Вариант 2" GroupName="Options"/>
+    <DatePicker/>
+    <ComboBox>
+        <ComboBoxItem Content="Пункт 1"/>
+        <ComboBoxItem Content="Пункт 2"/>
+    </ComboBox>
+</StackPanel>
+
+#6.6-6.7 Outlined элементы
+
+<TextBox a:TextFieldAssist.Label="TextBox"
+         UseFloatingWatermark="True"
+         Theme="{StaticResource OutlineTextBox}"
+         Classes="outline densed"/>
+
+<ComboBox Theme="{StaticResource MaterialOutlineComboBox}"
+          a:ComboBoxAssist.Label="ComboBox">
+    <ComboBoxItem Content="Option 1"/>
+    <ComboBoxItem Content="Option 2"/>
+</ComboBox>
