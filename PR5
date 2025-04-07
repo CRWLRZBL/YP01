@@ -1,0 +1,120 @@
+#App.axaml.cs:
+public partial class App : Application
+{
+    public static IConfiguration Configuration { get; private set; }
+    public static IServiceProvider Services { get; private set; }
+
+    public override void Initialize()
+    {
+        base.Initialize();
+        
+        // Конфигурация
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+            
+        Configuration = builder.Build();
+        
+        // DI контейнер
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        Services = services.BuildServiceProvider();
+    }
+
+    private void ConfigureServices(IServiceCollection services)
+    {
+        // Регистрация сервисов
+        services.AddSingleton<IMyService, MyService>();
+        services.AddTransient<MainWindowViewModel>();
+    }
+}
+
+#appsettings.json (Properties -> Copy to Output Directory = Copy always):
+{
+  "ApiKeys": {
+    "SomeApi": "ABCDE-12345-FGHIJ-67890"
+  },
+  "AppSettings": {
+    "Timeout": 30,
+    "EnableLogging": true
+  }
+}
+
+#Использование конфигурации в окне:
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:YourNamespace.ViewModels"
+        x:Class="YourNamespace.MainWindow"
+        Title="Avalonia DI Example">
+    
+    <StackPanel>
+        <TextBlock Text="{Binding ApiKey}"/>
+        <TextBlock Text="{Binding Timeout}"/>
+    </StackPanel>
+    
+</Window>
+
+##
+public class MainWindowViewModel
+{
+    public string ApiKey { get; }
+    public int Timeout { get; }
+
+    public MainWindowViewModel()
+    {
+        ApiKey = App.Configuration["ApiKeys:SomeApi"];
+        Timeout = App.Configuration.GetValue<int>("AppSettings:Timeout");
+    }
+}
+
+#Пример сервиса:
+public interface IMyService
+{
+    void DoWork();
+}
+
+public class MyService : IMyService
+{
+    public void DoWork()
+    {
+        // Логика сервиса
+    }
+}
+
+#Использование DI в ViewModel:
+public class MainWindowViewModel
+{
+    private readonly IMyService _service;
+
+    public MainWindowViewModel(IMyService service)
+    {
+        _service = service;
+    }
+
+    public void SomeMethod()
+    {
+        _service.DoWork();
+    }
+}
+
+#Регистрация ViewModel (в методе ConfigureServices):
+services.AddTransient<MainWindowViewModel>(sp => 
+    new MainWindowViewModel(sp.GetRequiredService<IMyService>()));
+
+
+Особенности реализации:
+Конфигурация инициализируется при запуске приложения
+Сервисы регистрируются в DI-контейнере
+Доступ к конфигурации через статическое свойство App.Configuration
+Сервисы можно получать через App.Services.GetService<T>()
+Для ViewModel рекомендуется использовать конструктор с параметрами
+Расширенная конфигурация:
+// Добавление переменных окружения
+builder.AddEnvironmentVariables();
+// Добавление аргументов командной строки
+builder.AddCommandLine(args);
+// Кастомный провайдер конфигурации
+builder.Add(new MyCustomConfigurationSource());
+Для работы с обновлениями конфигурации в реальном времени можно использовать:
+IOptionsMonitor<T> // для отслеживания изменений
+IOptionsSnapshot<T> // для получения актуальных значений
