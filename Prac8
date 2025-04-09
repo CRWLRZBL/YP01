@@ -1,0 +1,105 @@
+Любимый❤️, [Apr 9, 2025 at 10:39]
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+
+public class WeatherService
+{
+    private readonly HttpClient _httpClient;
+    private const string ApiKey = "ВАШ_API_КЛЮЧ";
+    
+    public WeatherService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
+    
+    // Получение текущей погоды по названию города
+    public async Task<WeatherData> GetCurrentWeatherByCityAsync(string city)
+    {
+        var response = await _httpClient.GetAsync(
+            $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={ApiKey}&units=metric&lang=ru");
+        
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<WeatherData>(content);
+    }
+    
+    // Получение координат по названию города
+    public async Task<GeoData[]> GetCityCoordinatesAsync(string city)
+    {
+        var response = await _httpClient.GetAsync(
+            $"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=5&appid={ApiKey}");
+        
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<GeoData[]>(content);
+    }
+    
+    // Получение текущей погоды по координатам
+    public async Task<WeatherData> GetCurrentWeatherByCoordsAsync(double lat, double lon)
+    {
+        var response = await _httpClient.GetAsync(
+            $"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={ApiKey}&units=metric&lang=ru");
+        
+        response.EnsureSuccessStatusCode();
+        
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<WeatherData>(content);
+    }
+}
+
+public class WeatherData
+{
+    public string Name { get; set; }
+    public WeatherMain Main { get; set; }
+    public WeatherWind Wind { get; set; }
+    public WeatherDescription[] Weather { get; set; }
+    public WeatherRain Rain { get; set; }
+    public WeatherSnow Snow { get; set; }
+    public WeatherClouds Clouds { get; set; }
+}
+
+public class WeatherMain
+{
+    public double Temp { get; set; }
+    public double Feels_Like { get; set; }
+    public int Pressure { get; set; } // в гектопаскалях
+    public int Humidity { get; set; } // в процентах
+}
+
+public class WeatherWind
+{
+    public double Speed { get; set; } // в м/с
+    public int Deg { get; set; } // направление в градусах
+}
+
+public class WeatherDescription
+{
+    public string Description { get; set; }
+    public string Icon { get; set; }
+}
+
+public class WeatherRain
+{
+    public double _1h { get; set; } // осадки за последний час
+}
+
+public class WeatherSnow
+{
+    public double _1h { get; set; } // осадки за последний час
+}
+
+public class WeatherClouds
+{
+    public int All { get; set; } // облачность в процентах
+}
+
+public class GeoData
+{
+    public string Name { get; set; }
+    public double Lat { get; set; }
+    public double Lon { get; set; }
+    public string Country { get; set; }
+}
