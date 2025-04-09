@@ -304,3 +304,131 @@ namespace WeatherApp
 
 
 
+using Avalonia.Media.Imaging;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace WeatherApp.ViewModels
+{
+    public partial class MainWindowViewModel : ObservableObject
+    {
+        private readonly WeatherService _weatherService;
+        
+        [ObservableProperty]
+        private string _cityName;
+        
+        [ObservableProperty]
+        private WeatherData _weatherData;
+        
+        public bool HasWeatherData => WeatherData != null;
+        
+        public string WeatherDescription => WeatherData?.Weather?[0]?.Description;
+        
+        public string Temperature => $"{WeatherData?.Main?.Temp:0.##} °C";
+        public string FeelsLike => $"{WeatherData?.Main?.Feels_Like:0.##} °C";
+        
+        public string Pressure => $"{ConvertHpaToMmHg(WeatherData?.Main?.Pressure ?? 0):0.##} мм рт. ст.";
+        
+        public string Humidity => $"{WeatherData?.Main?.Humidity} %";
+        
+        public string Wind => $"{GetWindDirection(WeatherData?.Wind?.Deg ?? 0)}, {WeatherData?.Wind?.Speed:0.##} м/с";
+        
+        public string Clouds => $"{WeatherData?.Clouds?.All} %";
+        
+        public string Precipitation
+        {
+            get
+            {
+                if (WeatherData?.Rain?._1h > 0)
+                    return $"Дождь: {WeatherData.Rain._1h:0.##} мм";
+                if (WeatherData?.Snow?._1h > 0)
+                    return $"Снег: {WeatherData.Snow._1h:0.##} мм";
+                return "Нет осадков";
+            }
+        }
+        
+        public Bitmap WeatherIcon => 
+            ImageHelper.LoadFromWeb(new Uri($"https://openweathermap.org/img/wn/{WeatherData?.Weather?[0]?.Icon}@2x.png"))?.Result;
+        
+        [RelayCommand]
+        private async Task GetWeather()
+        {
+            try
+            {
+                WeatherData = await _weatherService.GetCurrentWeatherByCityAsync(CityName);
+                OnPropertyChanged(nameof(HasWeatherData));
+                OnPropertyChanged(nameof(WeatherDescription));
+                OnPropertyChanged(nameof(Temperature));
+                OnPropertyChanged(nameof(FeelsLike));
+                OnPropertyChanged(nameof(Pressure));
+                OnPropertyChanged(nameof(Humidity));
+                OnPropertyChanged(nameof(Wind));
+                OnPropertyChanged(nameof(Clouds));
+                OnPropertyChanged(nameof(Precipitation));
+                OnPropertyChanged(nameof(WeatherIcon));
+            }
+            catch (Exception ex)
+            {
+                // Обработка ошибок
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+        }
+        
+        public MainWindowViewModel()
+        {
+            _weatherService = new WeatherService(new HttpClient());
+        }
+        
+        private double ConvertHpaToMmHg(int hpa)
+        {
+            return hpa * 0.750064;
+        }
+        
+        private string GetWindDirection(int degrees)
+        {
+            if (degrees < 0 || degrees > 360) return "Неизвестно";
+            
+            string[] directions = {
+                "северный", "северо-восточный", "восточный", "юго-восточный",
+                "южный", "юго-западный", "западный", "северо-западный", "северный"
+            };
+            
+            int index = (int)Math.Round(degrees / 45.0);
+            return directions[index];
+        }
+    }
+}
+
+using Avalonia.Media.Imaging;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace WeatherApp
+{
+    public static class ImageHelper
+    {
+        public static async Task<Bitmap> LoadFromWeb(Uri url)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                try
+                {
+                    var response = await httpClient.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+                    
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    return new Bitmap(stream);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+    }
+}
