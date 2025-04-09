@@ -1,0 +1,159 @@
+public partial class WeatherData : ObservableObject
+    {
+        [ObservableProperty]
+        private MainData _main;
+        
+        [ObservableProperty]
+        private WeatherInfo[] _weather;
+        
+        [ObservableProperty]
+        private WindData _wind;
+        
+        [ObservableProperty]
+        private CloudsData _clouds;
+        
+        [ObservableProperty]
+        private RainData _rain;
+        
+        [ObservableProperty]
+        private SnowData _snow;
+    }
+
+    public partial class MainData : ObservableObject
+    {
+        [ObservableProperty]
+        private double _temp;
+        
+        [ObservableProperty]
+        private double _feels_like;
+        
+        [ObservableProperty]
+        private int _pressure;
+        
+        [ObservableProperty]
+        private int _humidity;
+    }
+
+    public partial class WeatherInfo : ObservableObject
+    {
+        [ObservableProperty]
+        private string _description;
+        
+        [ObservableProperty]
+        private string _icon;
+    }
+
+    public partial class WindData : ObservableObject
+    {
+        [ObservableProperty]
+        private double _speed;
+        
+        [ObservableProperty]
+        private int _deg;
+    }
+
+    public partial class CloudsData : ObservableObject
+    {
+        [ObservableProperty]
+        private int _all;
+    }
+
+    public partial class RainData : ObservableObject
+    {
+        [ObservableProperty]
+        private double _1h;
+    }
+
+    public partial class SnowData : ObservableObject
+    {
+        [ObservableProperty]
+        private double _1h;
+    }
+
+    public partial class MainWindowViewModel : ObservableObject
+    {
+        private readonly WeatherService _weatherService;
+        
+        [ObservableProperty]
+        private string _cityName;
+        
+        [ObservableProperty]
+        private WeatherData _weatherData;
+        
+        public bool HasWeatherData => WeatherData != null;
+        
+        public string WeatherDescription => WeatherData?.Weather?[0]?.Description;
+        
+        public string Temperature => $"{WeatherData?.Main?.Temp:0.##} °C";
+        public string FeelsLike => $"{WeatherData?.Main?.Feels_Like:0.##} °C";
+        
+        public string Pressure => $"{ConvertHpaToMmHg(WeatherData?.Main?.Pressure ?? 0):0.##} мм рт. ст.";
+        
+        public string Humidity => $"{WeatherData?.Main?.Humidity} %";
+        
+        public string Wind => $"{GetWindDirection(WeatherData?.Wind?.Deg ?? 0)}, {WeatherData?.Wind?.Speed:0.##} м/с";
+        
+        public string Clouds => $"{WeatherData?.Clouds?.All} %";
+        
+        public string Precipitation
+        {
+            get
+            {
+                if (WeatherData?.Rain?._1h > 0)
+                    return $"Дождь: {WeatherData.Rain._1h:0.##} мм";
+                if (WeatherData?.Snow?._1h > 0)
+                    return $"Снег: {WeatherData.Snow._1h:0.##} мм";
+                return "Нет осадков";
+            }
+        }
+        
+        public Bitmap WeatherIcon => 
+            ImageHelper.LoadFromWeb(new Uri($"https://openweathermap.org/img/wn/{WeatherData?.Weather?[0]?.Icon}@2x.png"))?.Result;
+        
+        [RelayCommand]
+        private async Task GetWeather()
+        {
+            try
+            {
+                WeatherData = await _weatherService.GetCurrentWeatherByCityAsync(CityName);
+                OnPropertyChanged(nameof(HasWeatherData));
+                OnPropertyChanged(nameof(WeatherDescription));
+                OnPropertyChanged(nameof(Temperature));
+                OnPropertyChanged(nameof(FeelsLike));
+                OnPropertyChanged(nameof(Pressure));
+                OnPropertyChanged(nameof(Humidity));
+                OnPropertyChanged(nameof(Wind));
+                OnPropertyChanged(nameof(Clouds));
+                OnPropertyChanged(nameof(Precipitation));
+                OnPropertyChanged(nameof(WeatherIcon));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+        }
+        
+        public MainWindowViewModel()
+        {
+            _weatherService = new WeatherService(new HttpClient());
+        }
+        
+        private double ConvertHpaToMmHg(int hpa)
+        {
+            return hpa * 0.750064;
+        }
+        
+        private string GetWindDirection(int degrees)
+        {
+            if (degrees < 0 || degrees > 360) return "Неизвестно";
+            
+            string[] directions = {
+                "северный", "северо-восточный", "восточный", "юго-восточный",
+                "южный", "юго-западный", "западный", "северо-западный", "северный"
+            };
+            
+            int index = (int)Math.Round(degrees / 45.0);
+            return directions[index];
+        }
+    }
+}
