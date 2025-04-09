@@ -103,3 +103,204 @@ public class GeoData
     public double Lon { get; set; }
     public string Country { get; set; }
 }
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:WeatherApp.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="WeatherApp.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="WeatherApp">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <StackPanel Margin="20" Spacing="10">
+        <TextBlock Text="Погодное приложение" FontSize="20" HorizontalAlignment="Center"/>
+        
+        <TextBox Watermark="Введите город" Text="{Binding CityName}"/>
+        <Button Content="Получить погоду" Command="{Binding GetWeatherCommand}"/>
+        
+        <Border IsVisible="{Binding HasWeatherData}" Background="#f0f0f0" Padding="15" CornerRadius="10">
+            <StackPanel Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Image Width="50" Height="50" Source="{Binding WeatherIcon}"/>
+                    <TextBlock Text="{Binding WeatherData.Name}" FontSize="18" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <TextBlock Text="{Binding WeatherDescription}" FontSize="16"/>
+                
+                <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Температура:"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Temperature}"/>
+                    
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Ощущается как:"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FeelsLike}"/>
+                    
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Давление:"/>
+                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Pressure}"/>
+                    
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Влажность:"/>
+                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Humidity}"/>
+                    
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Ветер:"/>
+                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Wind}"/>
+                    
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Облачность:"/>
+                    <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Clouds}"/>
+                    
+                    <TextBlock Grid.Row="6" Grid.Column="0" Text="Осадки:"/>
+                    <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Precipitation}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</Window>
+
+
+using Avalonia.Media.Imaging;
+using ReactiveUI;
+using System;
+using System.Net.Http;
+using System.Reactive;
+using System.Threading.Tasks;
+
+namespace WeatherApp.ViewModels
+{
+    public class MainWindowViewModel : ViewModelBase
+    {
+        private readonly WeatherService _weatherService;
+        
+        private string _cityName;
+        public string CityName
+        {
+            get => _cityName;
+            set => this.RaiseAndSetIfChanged(ref _cityName, value);
+        }
+        
+        private WeatherData _weatherData;
+        public WeatherData WeatherData
+        {
+            get => _weatherData;
+            set => this.RaiseAndSetIfChanged(ref _weatherData, value);
+        }
+        
+        public bool HasWeatherData => WeatherData != null;
+        
+        public string WeatherDescription => WeatherData?.Weather?[0]?.Description;
+        
+        public string Temperature => $"{WeatherData?.Main?.Temp:0.##} °C";
+        public string FeelsLike => $"{WeatherData?.Main?.Feels_Like:0.##} °C";
+        
+        public string Pressure => $"{ConvertHpaToMmHg(WeatherData?.Main?.Pressure ?? 0):0.##} мм рт. ст.";
+        
+        public string Humidity => $"{WeatherData?.Main?.Humidity} %";
+        
+        public string Wind => $"{GetWindDirection(WeatherData?.Wind?.Deg ?? 0)}, {WeatherData?.Wind?.Speed:0.##} м/с";
+        
+        public string Clouds => $"{WeatherData?.Clouds?.All} %";
+        
+        public string Precipitation
+        {
+            get
+            {
+                if (WeatherData?.Rain?._1h > 0)
+                    return $"Дождь: {WeatherData.Rain._1h:0.##} мм";
+                if (WeatherData?.Snow?._1h > 0)
+                    return $"Снег: {WeatherData.Snow._1h:0.##} мм";
+                return "Нет осадков";
+            }
+        }
+        
+        public Bitmap WeatherIcon => 
+            ImageHelper.LoadFromWeb(new Uri($"https://openweathermap.org/img/wn/{WeatherData?.Weather?[0]?.Icon}@2x.png"))?.Result;
+        
+        public ReactiveCommand<Unit, Unit> GetWeatherCommand { get; }
+        
+        public MainWindowViewModel()
+        {
+            _weatherService = new WeatherService(new HttpClient());
+            
+            GetWeatherCommand = ReactiveCommand.CreateFromTask(GetWeather);
+        }
+        
+        private async Task GetWeather()
+        {
+            try
+            {
+                WeatherData = await _weatherService.GetCurrentWeatherByCityAsync(CityName);
+                this.RaisePropertyChanged(nameof(HasWeatherData));
+                this.RaisePropertyChanged(nameof(WeatherDescription));
+                this.RaisePropertyChanged(nameof(Temperature));
+                this.RaisePropertyChanged(nameof(FeelsLike));
+                this.RaisePropertyChanged(nameof(Pressure));
+                this.RaisePropertyChanged(nameof(Humidity));
+                this.RaisePropertyChanged(nameof(Wind));
+                this.RaisePropertyChanged(nameof(Clouds));
+                this.RaisePropertyChanged(nameof(Precipitation));
+                this.RaisePropertyChanged(nameof(WeatherIcon));
+            }
+            catch (Exception ex)
+            {
+                // Обработка ошибок
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+        }
+        
+        private double ConvertHpaToMmHg(int hpa)
+        {
+            return hpa * 0.750064;
+        }
+        
+        private string GetWindDirection(int degrees)
+        {
+            if (degrees < 0 || degrees > 360) return "Неизвестно";
+            
+            string[] directions = {
+                "северный", "северо-восточный", "восточный", "юго-восточный",
+                "южный", "юго-западный", "западный", "северо-западный", "северный"
+            };
+            
+            int index = (int)Math.Round(degrees / 45.0);
+            return directions[index];
+        }
+    }
+}
+
+using Avalonia.Media.Imaging;
+using System;
+using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+namespace WeatherApp
+{
+    public static class ImageHelper
+    {
+        public static async Task<Bitmap> LoadFromWeb(Uri url)
+        {
+            using (var httpClient = new HttpClient())
+            {
+                try
+                {
+                    var response = await httpClient.GetAsync(url);
+                    response.EnsureSuccessStatusCode();
+                    
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    return new Bitmap(stream);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+        }
+    }
+}
+
+
+
+
