@@ -1,0 +1,286 @@
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+}
+
+// Data/AppDbContext.cs
+using Microsoft.EntityFrameworkCore;
+
+public class AppDbContext : DbContext
+{
+    public DbSet<User> Users { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.UseSqlite("Data Source=users.db");
+    }
+}
+3. User Service Implementation
+
+csharp
+Copy
+// Services/UserService.cs
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+public class UserService
+{
+    private readonly AppDbContext _context;
+
+    public UserService(AppDbContext context)
+    {
+        _context = context;
+        _context.Database.EnsureCreated(); // Creates database if it doesn't exist
+    }
+
+    public async Task<List<User>> GetAllUsersAsync()
+    {
+        return await _context.Users.ToListAsync();
+    }
+
+    public async Task AddUserAsync(User user)
+    {
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateUserAsync(User user)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteUserAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user != null)
+        {
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
+    }
+}
+4. ViewModel Implementation with CommunityToolkit
+
+csharp
+Copy
+// ViewModels/UserManagementViewModel.cs
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+
+public partial class UserManagementViewModel : ObservableObject
+{
+    private readonly UserService _userService;
+    
+    [ObservableProperty]
+    private string _username;
+    
+    [ObservableProperty]
+    private string _password;
+    
+    [ObservableProperty]
+    private User _selectedUser;
+    
+    public ObservableCollection<User> Users { get; } = new ObservableCollection<User>();
+    
+    public bool IsEditing => SelectedUser != null;
+    
+    public UserManagementViewModel(UserService userService)
+    {
+        _userService = userService;
+        LoadUsers();
+    }
+    
+    private async void LoadUsers()
+    {
+        var users = await _userService.GetAllUsersAsync();
+        Users.Clear();
+        foreach (var user in users)
+        {
+            Users.Add(user);
+        }
+    }
+    
+    [RelayCommand]
+    private async Task AddUser()
+    {
+        if (string.IsNullOrWhiteSpace(Username)) return;
+        
+        var user = new User { Username = Username, Password = Password };
+        await _userService.AddUserAsync(user);
+        
+        Users.Add(user);
+        ClearFields();
+    }
+    
+    [RelayCommand]
+    private async Task UpdateUser()
+    {
+        if (SelectedUser == null) return;
+        
+        SelectedUser.Username = Username;
+        SelectedUser.Password = Password;
+        
+        await _userService.UpdateUserAsync(SelectedUser);
+        
+        var index = Users.IndexOf(SelectedUser);
+        Users[index] = SelectedUser;
+        
+        SelectedUser = null;
+        ClearFields();
+    }
+    
+    [RelayCommand]
+    private async Task DeleteUser(User user)
+    {
+        await _userService.DeleteUserAsync(user.Id);
+        Users.Remove(user);
+    }
+    
+    [RelayCommand]
+    private void EditUser(User user)
+    {
+        SelectedUser = user;
+        Username = user.Username;
+        Password = user.Password;
+        OnPropertyChanged(nameof(IsEditing));
+    }
+    
+    [RelayCommand]
+    private void CancelEdit()
+    {
+        SelectedUser = null;
+        ClearFields();
+    }
+    
+    private void ClearFields()
+    {
+        Username = string.Empty;
+        Password = string.Empty;
+        OnPropertyChanged(nameof(IsEditing));
+    }
+}
+5. View Implementation (XAML)
+
+xml
+Copy
+<!-- Views/UserManagementView.axaml -->
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:YourNamespace.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="450"
+             x:Class="YourNamespace.Views.UserManagementView">
+    
+    <Design.DataContext>
+        <vm:UserManagementViewModel/>
+    </Design.DataContext>
+    
+    <StackPanel Margin="20" Spacing="10">
+        <TextBlock Text="Username:"/>
+        <TextBox Text="{Binding Username}"/>
+        
+        <TextBlock Text="Password:"/>
+        <TextBox Text="{Binding Password}" PasswordChar="*"/>
+        
+        <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="Add" Command="{Binding AddUserCommand}" 
+                    IsVisible="{Binding !IsEditing}"/>
+            <Button Content="Update" Command="{Binding UpdateUserCommand}" 
+                    IsVisible="{Binding IsEditing}"/>
+            <Button Content="Cancel" Command="{Binding CancelEditCommand}" 
+                    IsVisible="{Binding IsEditing}"/>
+        </StackPanel>
+        
+        <TextBlock Text="Users:" Margin="0,20,0,0"/>
+        <ItemsControl Items="{Binding Users}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,5">
+                        <TextBlock Text="{Binding Username}" VerticalAlignment="Center"/>
+                        <Button Content="Edit" Command="{Binding $parent[ItemsControl].DataContext.EditUserCommand}"
+                                CommandParameter="{Binding}"
+                                Grid.Column="1" Margin="10,0"/>
+                        <Button Content="Delete" Command="{Binding $parent[ItemsControl].DataContext.DeleteUserCommand}"
+                                CommandParameter="{Binding}"
+                                Grid.Column="2"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </StackPanel>
+</UserControl>
+Run HTML
+6. Application Setup and DI Registration
+
+csharp
+Copy
+// Program.cs or App.axaml.cs
+public static class ServiceProvider
+{
+    public static IServiceProvider Instance { get; private set; }
+
+    public static void Initialize()
+    {
+        var services = new ServiceCollection();
+        
+        // Register services
+        services.AddSingleton<AppDbContext>();
+        services.AddSingleton<UserService>();
+        services.AddTransient<UserManagementViewModel>();
+        services.AddTransient<UserManagementView>();
+        
+        Instance = services.BuildServiceProvider();
+    }
+}
+
+// In your App.axaml.cs
+public override void OnFrameworkInitializationCompleted()
+{
+    // Initialize service provider
+    ServiceProvider.Initialize();
+    
+    // Create and show main window
+    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var dbContext = ServiceProvider.Instance.GetRequiredService<AppDbContext>();
+        dbContext.Database.EnsureCreated();
+        
+        desktop.MainWindow = new MainWindow
+        {
+            DataContext = new MainViewModel()
+        };
+    }
+
+    base.OnFrameworkInitializationCompleted();
+}
+7. Main Window and ViewModel
+
+csharp
+Copy
+// ViewModels/MainViewModel.cs
+public class MainViewModel
+{
+    public UserManagementViewModel UserManagement { get; }
+
+    public MainViewModel()
+    {
+        UserManagement = ServiceProvider.Instance.GetRequiredService<UserManagementViewModel>();
+    }
+}
+
+<!-- MainWindow.axaml -->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:YourNamespace.Views"
+        x:Class="YourNamespace.MainWindow"
+        Title="User Management">
+        
+    <views:UserManagementView DataContext="{Binding UserManagement}"/>
+</Window>
