@@ -1,0 +1,203 @@
+Вот реализация всех требований с созданием необходимых файлов:
+
+1. Обновленный showTable.php
+
+php
+Copy
+<?php
+require_once 'connection.php';
+
+// Подключение к серверу
+$conn = mysqli_connect($host, $user, $password, $database);
+if (!$conn) {
+    die("Connection failed: " . mysqli_connect_error());
+}
+
+// Обработка действий
+if (isset($_POST['del'])) {
+    header("Location: editTable.php?action=delete&id=".$_POST['del']);
+    exit();
+} elseif (isset($_POST['upd'])) {
+    header("Location: editTable.php?action=update&id=".$_POST['upd']);
+    exit();
+} elseif (isset($_POST['ins'])) {
+    header("Location: editTable.php?action=insert");
+    exit();
+}
+
+// ... (остальной код фильтрации и сортировки из предыдущего примера) ...
+
+if (mysqli_num_rows($result) > 0) {
+    echo "<form method='post'>";
+    echo "<table border='1'>";
+    echo "<tr>
+            <th><a href='showTable.php?sortBy=name'>Название</a></th>
+            <th>Описание</th>
+            <th><a href='showTable.php?sortBy=price'>Цена</a></th>
+            <th>Действия</th>
+          </tr>";
+    
+    while($row = mysqli_fetch_assoc($result)) {
+        echo "<tr>
+                <td>".htmlspecialchars($row['name'])."</td>
+                <td>".htmlspecialchars($row['description'])."</td>
+                <td>".number_format($row['price'], 2, '.', '')." руб.</td>
+                <td>
+                    <button name='upd' type='submit' value='".$row['id']."'>Редактировать</button>
+                    <button name='del' type='submit' value='".$row['id']."'>Удалить</button>
+                </td>
+              </tr>";
+    }
+    
+    echo "</table>";
+    echo "<button name='ins' type='submit'>Добавить товар</button>";
+    echo "</form>";
+} else {
+    echo "Товары не найдены";
+    echo "<form method='post'><button name='ins' type='submit'>Добавить товар</button></form>";
+}
+
+mysqli_close($conn);
+?>
+2. Файл editTable.php
+
+php
+Copy
+<?php
+require_once 'connection.php';
+
+$action = $_GET['action'] ?? '';
+$id = $_GET['id'] ?? 0;
+
+$conn = new mysqli($host, $user, $password, $database);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Получение данных товара для редактирования
+if ($action == 'update' && $id) {
+    $result = $conn->query("SELECT * FROM games WHERE id = $id");
+    $product = $result->fetch_assoc();
+}
+
+// Установка значений по умолчанию
+$name = $product['name'] ?? '';
+$description = $product['description'] ?? '';
+$price = $product['price'] ?? '';
+$category = $product['category'] ?? '';
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title><?= ucfirst($action) ?> товара</title>
+</head>
+<body>
+    <h1><?= ucfirst($action) ?> товара</h1>
+    
+    <?php if ($action == 'delete'): ?>
+        <p>Вы уверены, что хотите удалить товар?</p>
+        <form action="saveTable.php" method="post">
+            <input type="hidden" name="id" value="<?= $id ?>">
+            <input type="hidden" name="action" value="delete">
+            <button type="submit">Да</button>
+            <a href="showTable.php"><button type="button">Нет</button></a>
+        </form>
+    <?php else: ?>
+        <form action="saveTable.php" method="post">
+            <input type="hidden" name="id" value="<?= $id ?>">
+            <input type="hidden" name="action" value="<?= $action ?>">
+            
+            <label>Название:
+                <input type="text" name="name" value="<?= htmlspecialchars($name) ?>" required>
+            </label><br>
+            
+            <label>Описание:
+                <textarea name="description" required><?= htmlspecialchars($description) ?></textarea>
+            </label><br>
+            
+            <label>Цена:
+                <input type="number" name="price" step="0.01" value="<?= htmlspecialchars($price) ?>" required>
+            </label><br>
+            
+            <label>Категория:
+                <input type="text" name="category" value="<?= htmlspecialchars($category) ?>">
+            </label><br>
+            
+            <button type="submit">Сохранить</button>
+            <a href="showTable.php"><button type="button">Отмена</button></a>
+        </form>
+    <?php endif; ?>
+</body>
+</html>
+
+<?php $conn->close(); ?>
+3. Файл saveTable.php
+
+php
+Copy
+<?php
+require_once 'connection.php';
+
+$conn = new mysqli($host, $user, $password, $database);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$action = $_POST['action'];
+$id = $_POST['id'] ?? 0;
+$message = '';
+
+try {
+    switch ($action) {
+        case 'insert':
+            $name = $conn->real_escape_string($_POST['name']);
+            $description = $conn->real_escape_string($_POST['description']);
+            $price = (float)$_POST['price'];
+            $category = $conn->real_escape_string($_POST['category']);
+            
+            $sql = "INSERT INTO games (name, description, price, category) 
+                    VALUES ('$name', '$description', $price, '$category')";
+            $result = $conn->query($sql);
+            $message = $result ? "Товар успешно добавлен" : "Ошибка при добавлении товара";
+            break;
+            
+        case 'update':
+            $name = $conn->real_escape_string($_POST['name']);
+            $description = $conn->real_escape_string($_POST['description']);
+            $price = (float)$_POST['price'];
+            $category = $conn->real_escape_string($_POST['category']);
+            
+            $sql = "UPDATE games SET 
+                    name = '$name', 
+                    description = '$description', 
+                    price = $price, 
+                    category = '$category' 
+                    WHERE id = $id";
+            $result = $conn->query($sql);
+            $message = $result ? "Товар успешно обновлен" : "Ошибка при обновлении товара";
+            break;
+            
+        case 'delete':
+            $sql = "DELETE FROM games WHERE id = $id";
+            $result = $conn->query($sql);
+            $message = $result ? "Товар успешно удален" : "Ошибка при удалении товара";
+            break;
+    }
+} catch (Exception $e) {
+    $message = "Ошибка: " . $e->getMessage();
+}
+
+$conn->close();
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Результат операции</title>
+</head>
+<body>
+    <h1><?= $message ?></h1>
+    <a href="showTable.php"><button>Вернуться к списку товаров</button></a>
+</body>
+</html>
