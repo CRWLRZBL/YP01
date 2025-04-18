@@ -1,0 +1,282 @@
+Вот полная реализация всех требований с использованием модульной структуры и PDO:
+
+1. Файл connection.php
+
+php
+Copy
+<?php
+$host = 'localhost';
+$dbname = 'market';
+$user = 'root';
+$password = 'root';
+
+try {
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $user, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
+}
+?>
+2. Файл header.php
+
+php
+Copy
+<?php
+require_once 'connection.php';
+
+// Получаем категории для меню
+$categories = $pdo->query("SELECT DISTINCT category FROM games")->fetchAll(PDO::FETCH_COLUMN);
+$currentCategory = $_GET['category'] ?? null;
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интернет-магазин игр</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>GameMarket</h1>
+        <nav>
+            <ul class="categories">
+                <li><a href="index.php" <?= !$currentCategory ? 'class="active"' : '' ?>>Все товары</a></li>
+                <?php foreach ($categories as $category): ?>
+                    <li><a href="index.php?category=<?= urlencode($category) ?>" 
+                           <?= $currentCategory == $category ? 'class="active"' : '' ?>>
+                        <?= htmlspecialchars($category) ?>
+                    </a></li>
+                <?php endforeach; ?>
+            </ul>
+        </nav>
+    </header>
+    <main>
+3. Файл footer.php
+
+php
+Copy
+        </main>
+    <footer>
+        <div class="copyright">
+            &copy; GameMarket <?= date('Y') ?>
+        </div>
+        <div class="subscribe">
+            <form action="subscribe.php" method="post">
+                <input type="email" name="email" placeholder="Ваш email" required>
+                <button type="submit">Подписаться</button>
+            </form>
+        </div>
+    </footer>
+</body>
+</html>
+4. Файл index.php
+
+php
+Copy
+<?php
+require_once 'header.php';
+
+// Получаем товары с учетом фильтрации по категории
+$sql = "SELECT id, name, description, price, logo FROM games";
+if (isset($_GET['category'])) {
+    $sql .= " WHERE category = :category";
+}
+$sql .= " ORDER BY name";
+
+$stmt = $pdo->prepare($sql);
+if (isset($_GET['category'])) {
+    $stmt->bindParam(':category', $_GET['category']);
+}
+$stmt->execute();
+$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Выводим товары
+foreach ($products as $product): ?>
+    <article class="product">
+        <?php if ($product['logo']): ?>
+            <img src="<?= htmlspecialchars($product['logo']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="product-logo">
+        <?php endif; ?>
+        <h2><?= htmlspecialchars($product['name']) ?></h2>
+        <p><?= htmlspecialchars($product['description']) ?></p>
+        <p class="price">Цена: <?= number_format($product['price'], 2, '.', '') ?> руб.</p>
+        <a href="info.php?id=<?= $product['id'] ?>" class="btn">Подробнее</a>
+    </article>
+<?php endforeach;
+
+require_once 'footer.php';
+?>
+5. Файл info.php
+
+php
+Copy
+<?php
+require_once 'header.php';
+
+if (!isset($_GET['id'])) {
+    header("Location: index.php");
+    exit();
+}
+
+// Получаем информацию о товаре
+$productStmt = $pdo->prepare("SELECT * FROM games WHERE id = ?");
+$productStmt->execute([$_GET['id']]);
+$product = $productStmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$product) {
+    header("Location: index.php");
+    exit();
+}
+
+// Получаем фотографии товара
+$photosStmt = $pdo->prepare("SELECT * FROM photos WHERE product_id = ?");
+$photosStmt->execute([$_GET['id']]);
+$photos = $photosStmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Проверяем, есть ли товар в корзине
+$inCart = false;
+if (isset($_SESSION['user_id'])) {
+    $cartStmt = $pdo->prepare("SELECT COUNT(*) FROM cart WHERE product_id = ? AND user_id = ?");
+    $cartStmt->execute([$_GET['id'], $_SESSION['user_id']]);
+    $inCart = $cartStmt->fetchColumn() > 0;
+}
+
+// Обработка добавления в корзину
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_to_cart'])) {
+    try {
+        $insertStmt = $pdo->prepare("INSERT INTO cart (product_id, user_id, created_at) VALUES (?, ?, NOW())");
+        $insertStmt->execute([$_GET['id'], $_SESSION['user_id']]);
+        $inCart = true;
+    } catch (PDOException $e) {
+        $error = "Ошибка при добавлении в корзину: " . $e->getMessage();
+    }
+}
+?>
+
+<article class="product-detail">
+    <?php if ($product['logo']): ?>
+        <img src="<?= htmlspecialchars($product['logo']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="product-logo-large">
+    <?php endif; ?>
+    
+    <h1><?= htmlspecialchars($product['name']) ?></h1>
+    <p><?= htmlspecialchars($product['description']) ?></p>
+    <p class="price">Цена: <?= number_format($product['price'], 2, '.', '') ?> руб.</p>
+    
+    <form method="post">
+        <button type="submit" name="add_to_cart" <?= $inCart ? 'disabled' : '' ?>>
+            <?= $inCart ? 'Товар в корзине' : 'Добавить в корзину' ?>
+        </button>
+    </form>
+    
+    <?php if (!empty($photos)): ?>
+        <div class="product-gallery">
+            <h3>Галерея</h3>
+            <?php foreach ($photos as $photo): ?>
+                <img src="<?= htmlspecialchars($photo['path']) ?>" alt="Изображение товара">
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</article>
+
+<?php
+require_once 'footer.php';
+?>
+6. SQL для создания дополнительных таблиц
+
+sql
+Copy
+-- Добавление поля logo в таблицу games
+ALTER TABLE games ADD COLUMN logo VARCHAR(255);
+
+-- Создание таблицы Photos
+CREATE TABLE photos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    path VARCHAR(255) NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES games(id)
+);
+
+-- Создание таблицы Cart
+CREATE TABLE cart (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    created_at DATETIME NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES games(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+7. Файл styles.css (базовые стили)
+
+css
+Copy
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #333;
+    color: white;
+    padding: 1rem;
+}
+
+.categories {
+    display: flex;
+    list-style: none;
+    padding: 0;
+}
+
+.categories li {
+    margin-right: 1rem;
+}
+
+.categories a {
+    color: white;
+    text-decoration: none;
+}
+
+.categories a.active {
+    font-weight: bold;
+    color: #ff9900;
+}
+
+.product {
+    border: 1px solid #ddd;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.product-logo {
+    max-width: 100px;
+    float: left;
+    margin-right: 1rem;
+}
+
+.product-logo-large {
+    max-width: 200px;
+    float: left;
+    margin-right: 2rem;
+}
+
+.price {
+    font-weight: bold;
+    color: #009900;
+}
+
+.product-gallery img {
+    max-width: 300px;
+    margin: 0.5rem;
+}
+
+footer {
+    background: #333;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+}
+
+.subscribe {
+    margin-top: 1rem;
+}
