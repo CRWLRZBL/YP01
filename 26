@@ -1,3 +1,32 @@
+<form method="post">
+    <table border="1">
+        <!-- Заголовки таблицы -->
+        <tr>
+            <th>Название</th>
+            <th>Описание</th>
+            <th>Цена</th>
+            <th>Действия</th>
+        </tr>
+        
+        <!-- Строки товаров -->
+        <?php while($row = mysqli_fetch_assoc($result)): ?>
+            <tr>
+                <td><?= htmlspecialchars($row['name']) ?></td>
+                <td><?= htmlspecialchars($row['description']) ?></td>
+                <td><?= number_format($row['price'], 2, '.', '') ?> руб.</td>
+                <td>
+                    <button type="submit" name="upd" value="<?= $row['id'] ?>">Редактировать</button>
+                    <button type="submit" name="del" value="<?= $row['id'] ?>">Удалить</button>
+                </td>
+            </tr>
+        <?php endwhile; ?>
+    </table>
+    
+    <button type="submit" name="ins" value="1">Добавить товар</button>
+</form>
+
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['del'])) {
         header("Location: editTable.php?action=delete&id=".(int)$_POST['del']);
