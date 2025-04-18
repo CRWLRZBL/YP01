@@ -1,3 +1,18 @@
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['del'])) {
+        header("Location: editTable.php?action=delete&id=".(int)$_POST['del']);
+        exit();
+    } elseif (isset($_POST['upd'])) {
+        header("Location: editTable.php?action=update&id=".(int)$_POST['upd']);
+        exit();
+    } elseif (isset($_POST['ins'])) {
+        header("Location: editTable.php?action=insert");
+        exit();
+    }
+}
+
+
+
 Вот реализация всех требований с созданием необходимых файлов:
 
 1. Обновленный showTable.php
